@@ -1,44 +1,59 @@
 from flask import Flask, render_template, request, jsonify
-import os
+import urllib.request
 import json
 
 app = Flask(__name__)
 
-DATA_FILE = 'leaderboard.json'
+# Free Public Cloud Storage (JSONBin public endpoint)
+CLOUD_URL = "https://api.jsonbin.io/v3/b/66f8d098acd3cb34a88d44e5"
 
-# Helper function to load scores from file
+# Helper function to load scores from cloud
 def load_scores():
-    if os.path.exists(DATA_FILE):
-        try:
-            with open(DATA_FILE, 'r') as f:
-                return json.load(f)
-        except:
-            pass
-    return []
+    try:
+        req = urllib.request.Request(CLOUD_URL, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req) as response:
+            data = json.loads(response.read().decode())
+            return data.get("record", [])
+    except Exception as e:
+        print("Error reading cloud storage:", e)
+        return []
 
-# Helper function to save scores to file
+# Helper function to save scores to cloud
 def save_scores(scores):
-    with open(DATA_FILE, 'w') as f:
-        json.dump(scores, f)
+    try:
+        req = urllib.request.Request(
+            CLOUD_URL,
+            data=json.dumps(scores).encode('utf-8'),
+            headers={
+                "Content-Type": "application/json",
+                "User-Agent": "Mozilla/5.0"
+            },
+            method="PUT"
+        )
+        with urllib.request.urlopen(req) as response:
+            return True
+    except Exception as e:
+        print("Error saving cloud storage:", e)
+        return False
 
 @app.route("/")
 def home():
     return render_template("index.html")
 
-# Endpoint to get current leaderboard
+# Get leaderboard endpoint
 @app.route("/api/leaderboard", methods=["GET"])
 def get_leaderboard():
     scores = load_scores()
     return jsonify(scores)
 
-# Endpoint to submit a new score
+# Add score endpoint
 @app.route("/api/leaderboard", methods=["POST"])
 def add_score():
     data = request.get_json()
     if data and "name" in data and "score" in data:
         scores = load_scores()
         
-        # Add new entry
+        # Format entry
         new_entry = {
             "name": data["name"],
             "class": data.get("class", "8th"),
@@ -47,7 +62,9 @@ def add_score():
         }
         scores.append(new_entry)
         
-        # Save back to file
+        # Sort scores highest to lowest
+        scores.sort(key=lambda x: int(x["score"]), reverse=True)
+        
         save_scores(scores)
         return jsonify({"status": "success", "leaderboard": scores}), 200
         
