@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Robot Kavin Lab</title>
+<style>
+:root{--bg1:#f4f9ff;--bg2:#dff0ff;--ink:#12233d;--card:#ffffff;--blue:#1f6fff;--orange:#ff8a1f;--cyan:#19d3e6;--muted:#4a5d7a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg1:#0c1426;--bg2:#13213d;--ink:#eaf2ff;--card:#18284a;--muted:#a9bbd9}}
+:root[data-theme="dark"]{color-scheme:dark;--bg1:#0c1426;--bg2:#13213d;--ink:#eaf2ff;--card:#18284a;--muted:#a9bbd9}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;font-family:"Trebuchet MS",system-ui,sans-serif;color:var(--ink);background:linear-gradient(160deg,var(--bg1),var(--bg2));min-height:100vh;overflow-x:hidden}
+.bg span{position:fixed;font-size:28px;opacity:.35;animation:drift 14s linear infinite;pointer-events:none}
+@keyframes drift{0%{transform:translateY(105vh) rotate(0)}100%{transform:translateY(-15vh) rotate(360deg)}}
+.wrap{max-width:1000px;margin:0 auto;padding:20px 18px;position:relative}
+.hero{display:flex;flex-wrap:wrap;align-items:center;gap:24px;min-height:80vh}
+.hero .txt{flex:1 1 320px}
+h1{font-size:clamp(30px,6vw,52px);margin:0 0 12px;line-height:1.1}
+h1 em{font-style:normal;color:var(--blue)}
+.sub{font-size:19px;color:var(--muted);margin:0 0 22px}
+.btn{font:inherit;font-weight:700;border:0;border-radius:999px;padding:14px 22px;margin:4px 8px 4px 0;cursor:pointer;font-size:17px;transition:transform .15s}
+.btn:hover{transform:translateY(-2px) scale(1.03)}
+.p{background:var(--orange);color:#fff}.s{background:var(--card);color:var(--ink);border:2px solid var(--blue)}
+.robo{flex:1 1 260px;display:flex;justify-content:center;animation:enter 1.2s ease-out both}
+@keyframes enter{from{transform:translateX(120px);opacity:0}to{transform:none;opacity:1}}
+.robo svg{width:min(320px,80vw);height:auto;animation:float 3.5s ease-in-out infinite;cursor:pointer}
+@keyframes float{50%{transform:translateY(-14px)}}
+.robo:hover .chest{animation:pulse .6s infinite alternate}.robo:hover .eye{animation:blink .5s 2}
+@keyframes pulse{to{fill:#19d3e6;filter:drop-shadow(0 0 8px #19d3e6)}}
+@keyframes blink{50%{transform:scaleY(.1)}}
+.eye{transform-box:fill-box;transform-origin:center}
+.wave{transform-origin:20px 150px;animation:wave 1s ease-in-out 1.2s 3}
+@keyframes wave{50%{transform:rotate(-25deg)}}
+.bubble{background:var(--card);border-radius:18px;padding:16px 18px;margin-top:10px;display:none;box-shadow:0 6px 20px #0002}
+.bubble.on{display:block}
+#lesson{display:none;padding:10px 0 40px}
+#lesson.on{display:block}
+.slide{background:var(--card);border-radius:24px;padding:26px;box-shadow:0 10px 30px #0002;text-align:center;min-height:360px}
+.vis{font-size:68px;margin:6px 0;animation:pop .6s ease both}
+@keyframes pop{from{transform:scale(.4) rotate(-10deg);opacity:0}to{transform:none;opacity:1}}
+.slide h2{margin:6px 0;font-size:clamp(22px,4vw,32px)}
+.slide .st{color:var(--blue);font-weight:700;margin:0 0 10px}
+.slide p.sc{font-size:19px;line-height:1.5;max-width:640px;margin:10px auto}
+.concept{font-size:14px;color:var(--muted);max-width:620px;margin:10px auto}
+.nav{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap}
+.bar{height:10px;background:var(--bg2);border-radius:9px;overflow:hidden;margin:0 0 14px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--blue));transition:width .4s}
+a.link{color:#fff;background:var(--blue);padding:12px 20px;border-radius:999px;text-decoration:none;font-weight:700;display:inline-block;animation:glow 1.5s infinite alternate}
+@keyframes glow{to{box-shadow:0 0 18px var(--cyan)}}
+.controls-top{position:absolute;right:18px;top:10px;display:flex;gap:10px;align-items:center}
+.theme,.sfx-toggle{background:none;border:0;font-size:22px;cursor:pointer}
+
+/* Modals for Name Prompt & Leaderboard */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:100;background:#000b;align-items:center;justify-content:center;padding:16px}
+.modal-overlay.on{display:flex}
+.modal-box{width:min(500px,100%);background:var(--card);border-radius:24px;padding:30px;box-shadow:0 20px 50px #0008;text-align:center}
+.modal-box input{width:100%;padding:12px 16px;margin:10px 0 20px;border-radius:12px;border:2px solid var(--blue);background:var(--bg1);color:var(--ink);font-size:16px}
+.lb-table{width:100%;border-collapse:collapse;margin:15px 0;max-height:250px;overflow-y:auto;display:block}
+.lb-table th,.lb-table td{padding:10px;border-bottom:1px solid var(--bg2);text-align:center;font-size:15px}
+.lb-table th{color:var(--blue)}
+
+#vm{display:none;position:fixed;inset:0;z-index:50;background:#000b;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px))}
+#vm.on{display:flex}
+.vbox{width:min(760px,100%);background:var(--card);border-radius:22px;padding:14px;box-shadow:0 20px 50px #0008}
+#vst{aspect-ratio:16/9;border-radius:16px;background:linear-gradient(160deg,var(--bg1),var(--bg2));display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px;overflow:hidden}
+#vst .vis{font-size:clamp(44px,12vw,92px)}
+#vst h2{margin:4px 0 0;font-size:clamp(18px,4.5vw,34px)}
+.cap{margin:10px 0 0;font-size:clamp(14px,3.2vw,22px);line-height:1.4;max-width:90%;background:var(--card);padding:8px 14px;border-radius:12px;animation:pop .5s ease both}
+.vc{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.vc .btn{padding:9px 16px;font-size:15px;margin:0}
+.vb{flex:1 1 120px;height:10px;background:var(--bg2);border-radius:9px;overflow:hidden}
+.vb i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--blue))}
+
+/* Quiz Styles */
+.quiz-options{display:flex;flex-direction:column;gap:10px;max-width:450px;margin:20px auto}
+.quiz-btn{background:var(--bg2);border:2px solid var(--blue);color:var(--ink);padding:10px 16px;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;transition:all 0.2s}
+.quiz-btn:hover{background:var(--blue);color:#fff}
+.quiz-result{font-weight:bold;margin-top:10px;font-size:18px}
+footer{text-align:center;color:var(--muted);font-size:13px;padding:20px}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true"><span style="left:8%;animation-delay:0s">⚙️</span><span style="left:25%;animation-delay:3s">🧱</span><span style="left:45%;animation-delay:6s">01101</span><span style="left:65%;animation-delay:2s">🔌</span><span style="left:82%;animation-delay:8s">⚙️</span><span style="left:92%;animation-delay:5s">✨</span></div>
+<div class="wrap">
+<div class="controls-top">
+  <button class="sfx-toggle" id="sfx-toggle" title="Toggle Sound Effects">🔊</button>
+  <button class="theme" id="theme" title="Light / dark">🌓</button>
+</div>
+
+<section class="hero" id="home">
+<div class="txt">
+<h1>Welcome to <em>Robot Kavin Lab!</em></h1>
+<p class="sub">“Hi there! I’m Robo-Guide, and I’m super excited to teach you how to build your very first AI!”</p>
+<button class="btn p" id="start">🚀 Start Your AI Journey</button>
+<button class="btn s" id="lb-btn">🏆 Leaderboard</button>
+<button class="btn s" id="hear">💬 Robo-Guide says</button>
+<button class="btn s" id="vid">🎥 Watch Intro Video</button>
+<div class="bubble" id="bubble"><b>Hello, Future Roboticists! 👋</b><br>Computers don’t just follow instructions. They can learn how to see, hear, and think! Today we’ll unlock the secrets of Artificial Intelligence using Google Teachable Machine. By the end, you’ll be teaching computers to recognize objects and control real robots. Ready? Click the orange button to start!</div>
+</div>
+<div class="robo" id="robo">
+<svg viewBox="0 0 240 300" role="img" aria-label="Friendly cartoon robot with safety goggles">
+<line x1="120" y1="20" x2="120" y2="46" stroke="#8aa4c8" stroke-width="5"/><circle cx="120" cy="16" r="9" fill="#ff8a1f"/>
+<rect x="55" y="46" width="130" height="100" rx="28" fill="#dbe8ff" stroke="#1f6fff" stroke-width="5"/>
+<rect x="65" y="66" width="110" height="46" rx="23" fill="#ffd166" stroke="#e0a400" stroke-width="4"/>
+<circle class="eye" cx="94" cy="89" r="13" fill="#0b2a5e"/><circle class="eye" cx="146" cy="89" r="13" fill="#0b2a5e"/>
+<circle cx="94" cy="89" r="6" fill="#19d3e6"/><circle cx="146" cy="89" r="6" fill="#19d3e6"/>
+<path d="M95 124 Q120 142 145 124" stroke="#1f6fff" stroke-width="5" fill="none" stroke-linecap="round"/>
+<rect x="60" y="154" width="120" height="100" rx="24" fill="#1f6fff"/>
+<circle class="chest" cx="120" cy="196" r="20" fill="#19d3e6" opacity=".85"/>
+<rect x="70" y="256" width="36" height="34" rx="10" fill="#12233d"/><rect x="134" y="256" width="36" height="34" rx="10" fill="#12233d"/>
+<rect x="196" y="164" width="16" height="64" rx="8" fill="#8aa4c8"/>
+<g class="wave"><rect x="12" y="130" width="16" height="64" rx="8" fill="#8aa4c8"/><circle cx="20" cy="124" r="14" fill="#ff8a1f"/></g>
+</svg>
+</div>
+</section>
+
+<section id="lesson">
+<div class="bar"><i id="prog"></i></div>
+<div class="slide" id="slide"></div>
+<div class="nav"><button class="btn s" id="prev">← Back</button><span id="count"></span><button class="btn p" id="next">Next →</button></div>
+<div class="nav"><button class="btn s" id="read">🔊 Read this page</button><button class="btn s" id="home2">🏠 Home</button></div>
+</section>
+</div>
+
+<!-- Name & Class Modal -->
+<div class="modal-overlay" id="name-modal">
+  <div class="modal-box">
+    <h2>👋 Welcome, Roboticist!</h2>
+    <p>Please enter your details before starting:</p>
+    <label><b>Student Name:</b></label>
+    <input type="text" id="student-name" placeholder="e.g., Kavin" />
+    <label><b>Class / Standard:</b></label>
+    <input type="text" id="student-class" placeholder="e.g., 8th Standard" />
+    <button class="btn p" id="start-journey-btn">Let's Go! 🚀</button>
+  </div>
+</div>
+
+<!-- Leaderboard Modal -->
+<div class="modal-overlay" id="lb-modal">
+  <div class="modal-box">
+    <h2>🏆 Live Leaderboard</h2>
+    <p>Top Robotics & AI Students (Ranked by Score & Speed)</p>
+    <table class="lb-table">
+      <thead>
+        <tr><th>Rank</th><th>Name</th><th>Class</th><th>Score</th><th>Time</th></tr>
+      </thead>
+      <tbody id="lb-body">
+        <tr><td colspan="5">No scores yet! Be the first!</td></tr>
+      </tbody>
+    </table>
+    <button class="btn s" onclick="closeLeaderboard()">Close</button>
+  </div>
+</div>
+
+<div id="vm"><div class="vbox"><div id="vst"></div><div class="vc"><button class="btn p" id="vplay">▶ Play</button><div class="vb"><i id="vbar"></i></div><button class="btn s" id="vmute" title="Sound on/off">🔇 Sound off</button><button class="btn s" id="vgo">🚀 Start lesson</button><button class="btn s" id="vx">✖ Close</button></div></div></div>
+<footer>Robot Kavin Lab · Built with Google Teachable Machine</footer>
+
+<script>
+var audioCtx = null;
+var sfxEnabled = true;
+var currentStudent = { name: "", classVal: "" };
+var quizStartTime = 0;
+var quizTimerInterval = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+function playTone(freq, type, duration, delay = 0) {
+  if (!sfxEnabled) return;
+  initAudio();
+  try {
+    setTimeout(() => {
+      var osc = audioCtx.createOscillator();
+      var gain = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    }, delay * 1000);
+  } catch(e) {}
+}
+
+function sfxClick() { playTone(587.33, 'sine', 0.08); }
+function sfxNext() { playTone(440, 'triangle', 0.1); playTone(880, 'triangle', 0.1, 0.08); }
+function sfxCorrect() { playTone(523.25, 'sine', 0.1); playTone(659.25, 'sine', 0.1, 0.1); playTone(783.99, 'sine', 0.2, 0.2); }
+function sfxWrong() { playTone(150, 'sawtooth', 0.2); }
+
+var S=[
+["Welcome to the World of AI!","Meet your robot guide","🤖💻","Welcome, future roboticists! Today, we are going to learn how to teach a computer to think and see, just like a human!","A friendly robot in safety goggles waves next to a glowing laptop."],
+["What is Artificial Intelligence?","Brain meets chip","🧠⚡💾","AI stands for Artificial Intelligence. It means giving computers a special kind of ‘brain’ so they can learn patterns and make smart decisions.","An orange brain and a blue computer chip trade lightning pulses."],
+["Meet Google Teachable Machine!","Our playground tool","📷🎤🕺","Google Teachable Machine lets anyone build and train an AI model in minutes, without typing a single line of complex code!","Webcam, microphone and pose icons bounce around the logo."],
+["The 3 Big Steps of AI","Gather, Train, Test","1️⃣➡️2️⃣➡️3️⃣","To build any AI, we always follow three simple steps: First we collect pictures, then we let the computer study them, and finally we test it out!","1. Gather Data → 2. Train Model → 3. Test AI."],
+["Step 1: Data Collection","Gathering examples","🟥📸🪣","Step 1 is Gathering Data! Computers learn by looking at examples. The more photos we give it, the smarter it becomes!","Hold a red block to the webcam. Snapshots fly into Class A (Red Block); do the same for Class B (Blue Block)."],
+["Variety Makes a Smarter AI!","Different angles, different light","🔄🔍💡","Don’t take the same photo over and over! Show your object from different angles and lighting so your AI doesn’t get tricked later.","Tilted, upside down, close, far, bright light, dim light."],
+["Step 2: Training the Model","The learning phase","⚙️🧠⏳","Step 2 is Training! When we hit the Train button, the computer looks at all our photos and figures out the visual patterns all by itself.","Glowing dots connect into a mini neural network while a loading bar fills."],
+["How the Computer “Sees” Patterns","Pixels, colors and edges","🟥🟦🔬","How does it know the difference? The computer breaks down images into tiny squares called pixels and counts the colors and shapes!","A scanner laser zooms into red and blue pixel grids."],
+["Step 3: Testing Your AI","The prediction phase","✅📊🎉","Step 3 is Testing! We hold up an object, and the AI makes a prediction with a percentage score showing how sure it is.","A new red block appears and the meter shoots to 99% Red Block."],
+["What Happens When AI Gets Confused?","More data fixes it","🍎❓😵","Uh oh! What if we show it an apple? The AI gets confused because we never taught it what an apple was! That means we need more data.","The bars wobble at 50% and 50% under a big question mark."],
+["Other Types of AI Models","Pictures, sounds and poses","🖼️🎙️🕺","Teachable Machine isn’t just for pictures! You can also train AI to recognize your voice, sounds, or even body movements and dances!","Three laptops spin in a 3D carousel."],
+["Connecting Software to Hardware","Robotics time!","💻🔌🤖","Now comes the cool part for robotics! We can send the AI’s decision as a signal to make real motors move and lights turn on!","Energy pulses travel from the laptop to an Arduino or Micro:bit and a motor."],
+["The Smart Sorter","A real-world robotics application","🦾📦🟥","Look at that! When the camera sees a red block, the robot arm automatically sorts it. This is how smart automated factories work in the real world!","The camera scans the belt, the arm picks the block and drops it in the red bin."],
+["Creative Project Ideas","Pick one for class","♻️😷🕹️🐶","Here are some awesome projects you can build today! Trash Sorter (recyclable vs. garbage), Security Guard Bot (recognizes face masks), Gesture Driver (drive a robot with hand gestures), and Pet Detector (cats vs. dogs).","Four cards flip open one by one."],
+["Your Turn! Let’s Build an AI!","Time to Train Your First AI!","🚀🤖⭐","Now it’s your turn! Grab your laptops, open up Teachable Machine, and let’s create our very first AI model together!",""]
+];
+
+var Q = [
+  {q: "What does AI stand for?", o: ["Automated Internet", "Artificial Intelligence", "Advanced Interaction"], a: 1},
+  {q: "Which tool are we using to build our first AI model easily?", o: ["Google Teachable Machine", "Photoshop", "Microsoft Excel"], a: 0},
+  {q: "What are the 3 big steps of building an AI?", o: ["Run, Jump, Play", "Gather, Train, Test", "Copy, Paste, Print"], a: 1},
+  {q: "In Step 1, what do computers learn from?", o: ["Magic spells", "Examples and photos", "Random guessing"], a: 1},
+  {q: "Why do we use different angles and lighting when gathering data?", o: ["To make a smarter AI", "To waste time", "To make pictures blurry"], a: 0},
+  {q: "What happens when you click the 'Train' button?", o: ["The computer deletes files", "The computer finds visual patterns", "The computer shuts down"], a: 1},
+  {q: "How does a computer 'see' an image digitally?", o: ["Using tiny squares called pixels", "It has human eyes inside", "It reads minds"], a: 0},
+  {q: "What is Step 3 of the AI process?", o: ["Testing your AI", "Sleeping", "Eating snacks"], a: 0},
+  {q: "Why does an AI get confused by an object it has never seen?", o: ["It has a fever", "Because we never taught it what that object was", "It ran out of battery"], a: 1},
+  {q: "What else can Teachable Machine recognize besides pictures?", o: ["Sounds, voices, and poses", "The weather", "Your homework grades"], a: 0},
+  {q: "How do we connect AI software to real robotics hardware?", o: ["By sending signals to make motors move and lights turn on", "By shaking the laptop", "By painting the screen"], a: 0},
+  {q: "What does a Smart Sorter robot do in a factory?", o: ["Sorts objects automatically based on what the camera sees", "Makes coffee", "Plays video games"], a: 0},
+  {q: "Which of these is a creative project idea mentioned in class?", o: ["Trash Sorter robot", "Flying car designer", "Rocket ship builder"], a: 0},
+  {q: "Where should you go to train your very first AI model?", o: ["teachablemachine.withgoogle.com", "google.com", "roblox.com"], a: 0},
+  {q: "Are you ready to make real robots move with AI?", o: ["Yes, let's go!", "No", "Maybe"], a: 0}
+];
+
+var qi = 0, score = 0, totalSeconds = 0;
+var i=0,$=function(id){return document.getElementById(id)};
+function speak(t){try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(t);u.rate=.95;u.pitch=1.2;speechSynthesis.speak(u)}catch(e){}}
+function esc(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;")}
+
+function show(){
+  if(i < 15) {
+    var s=S[i];
+    $("slide").innerHTML='<div class="vis">'+s[2]+'</div><h2>'+esc(s[0])+'</h2><p class="st">'+esc(s[1])+'</p><p class="sc">“'+esc(s[3])+'”</p>'+(s[4]?'<p class="concept">'+esc(s[4])+'</p>':'')+(i==14?'<br><button class="btn p" onclick="startQuiz()">📝 Start 15-Question Quiz!</button><br><br><a class="link" href="https://teachablemachine.withgoogle.com" target="_blank" rel="noopener">teachablemachine.withgoogle.com</a>':'');
+  } else {
+    showQuizQuestion();
+  }
+  $("prog").style.width=((i+1)/16*100)+"%";
+  $("count").textContent=(i+1)+" / 16";
+  $("prev").style.visibility=i?"visible":"hidden";
+  $("next").style.visibility=i<15?"visible":"hidden";
+  try{if(location.hash!=="#"+(i+1))history.replaceState(null,"","#"+(i+1))}catch(e){}}
+
+function startQuiz() {
+  sfxClick();
+  i = 15;
+  qi = 0;
+  score = 0;
+  totalSeconds = 0;
+  if(quizTimerInterval) clearInterval(quizTimerInterval);
+  quizTimerInterval = setInterval(() => { totalSeconds++; }, 1000);
+  showQuizQuestion();
+}
+
+function showQuizQuestion() {
+  if(qi < Q.length) {
+    var currQ = Q[qi];
+    var html = '<h2>🧠 Quiz for ' + esc(currentStudent.name) + ' (' + (qi+1) + '/15)</h2>';
+    html += '<p class="st">' + esc(currQ.q) + '</p>';
+    html += '<div class="quiz-options">';
+    for(var j=0; j<currQ.o.length; j++) {
+      html += '<button class="quiz-btn" onclick="checkAnswer(' + j + ')">' + esc(currQ.o[j]) + '</button>';
+    }
+    html += '</div><div class="quiz-result" id="qres"></div>';
+    $("slide").innerHTML = html;
+  } else {
+    clearInterval(quizTimerInterval);
+    saveScoreToLeaderboard();
+    var mins = Math.floor(totalSeconds / 60);
+    var secs = totalSeconds % 60;
+    var timeStr = (mins > 0 ? mins + "m " : "") + secs + "s";
+    
+    $("slide").innerHTML = '<h2>🎉 Quiz Completed!</h2>' +
+      '<p class="st">Great job, ' + esc(currentStudent.name) + ' (' + esc(currentStudent.classVal) + ')!</p>' +
+      '<p class="sc">You scored <b>' + score + ' / 15</b> in <b>' + timeStr + '</b>!</p>' +
+      '<button class="btn p" onclick="openLeaderboard()">🏆 View Live Leaderboard</button> ' +
+      '<button class="btn s" onclick="openLesson(0)">🔄 Play Again</button>';
+  }
+  $("count").textContent = "Quiz " + (qi+1) + " / 15";
+  $("next").style.visibility = "hidden";
+}
+
+function checkAnswer(selected) {
+  var currQ = Q[qi];
+  var resEl = $("qres");
+  if(selected === currQ.a) {
+    sfxCorrect();
+    resEl.style.color = "green";
+    resEl.textContent = "✅ Correct!";
+    score++;
+  } else {
+    sfxWrong();
+    resEl.style.color = "red";
+    resEl.textContent = "❌ Oops! The correct answer was: " + currQ.o[currQ.a];
+  }
+  setTimeout(function() {
+    qi++;
+    showQuizQuestion();
+  }, 1200);
+}
+
+function saveScoreToLeaderboard() {
+  var entry = {
+    name: currentStudent.name || "Anonymous",
+    classVal: currentStudent.classVal || "General",
+    score: score,
+    time: totalSeconds,
+    date: new Date().toLocaleTimeString()
+  };
+  var lb = JSON.parse(localStorage.getItem("robotics_lb") || "[]");
+  lb.push(entry);
+  // Sort by highest score descending, then lowest time ascending
+  lb.sort((a, b) => b.score - a.score || a.time - b.time);
+  localStorage.setItem("robotics_lb", JSON.stringify(lb));
+}
+
+function openLeaderboard() {
+  sfxClick();
+  var lb = JSON.parse(localStorage.getItem("robotics_lb") || "[]");
+  var html = "";
+  if(lb.length === 0) {
+    html = '<tr><td colspan="5">No scores recorded yet!</td></tr>';
+  } else {
+    for(var k=0; k<lb.length; k++) {
+      var row = lb[k];
+      var rankEmoji = k === 0 ? "🥇 1st" : (k === 1 ? "🥈 2nd" : (k === 2 ? "🥉 3rd" : (k+1) + "th"));
+      var mins = Math.floor(row.time / 60);
+      var secs = row.time % 60;
+      var tFormatted = (mins > 0 ? mins + "m " : "") + secs + "s";
+      html += '<tr><td><b>' + rankEmoji + '</b></td><td>' + esc(row.name) + '</td><td>' + esc(row.classVal) + '</td><td><b>' + row.score + '/15</b></td><td>' + tFormatted + '</td></tr>';
+    }
+  }
+  $("lb-body").innerHTML = html;
+  $("lb-modal").className = "modal-overlay on";
+}
+
+function closeLeaderboard() {
+  sfxClick();
+  $("lb-modal").className = "modal-overlay";
+}
+
+function openLesson(n){
+  sfxClick();
+  i=n||0;
+  $("home").style.display="none";
+  $("lesson").className="on";
+  show();
+  window.scrollTo(0,0);
+}
+function goHome(){
+  sfxClick();
+  try{speechSynthesis.cancel()}catch(e){}
+  $("lesson").className="";
+  $("home").style.display="flex";
+}
+
+$("start").onclick=function(){
+  sfxClick();
+  $("name-modal").className = "modal-overlay on";
+};
+
+$("start-journey-btn").onclick = function() {
+  var nameIn = $("student-name").value.trim();
+  var classIn = $("student-class").value.trim();
+  if(!nameIn) {
+    alert("Please enter your name!");
+    return;
+  }
+  currentStudent.name = nameIn;
+  currentStudent.classVal = classIn || "8th Standard";
+  $("name-modal").className = "modal-overlay";
+  sfxClick();
+  openLesson(0);
+};
+
+$("lb-btn").onclick = openLeaderboard;
+$("next").onclick=function(){sfxNext();if(i<15){i++;show()}};
+$("prev").onclick=function(){sfxClick();if(i>0){i--;show()}};
+$("home2").onclick=goHome;
+$("read").onclick=function(){sfxClick();if(i<15){speak(S[i][0]+". "+S[i][3])}else{speak(Q[qi].q)}};
+$("hear").onclick=function(){sfxClick();$("bubble").className="bubble on";speak("Beep boop! "+$("bubble").innerText)};
+$("robo").onclick=function(){sfxClick();$("bubble").className="bubble on";speak("Beep boop! Hi, I am Robo-Guide!")};
+$("theme").onclick=function(){
+  sfxClick();
+  var r=document.documentElement,d=r.getAttribute("data-theme");
+  var dark=d?d=="dark":matchMedia("(prefers-color-scheme:dark)").matches;
+  r.setAttribute("data-theme",dark?"light":"dark");
+};
+
+$("sfx-toggle").onclick = function() {
+  sfxEnabled = !sfxEnabled;
+  $("sfx-toggle").textContent = sfxEnabled ? "🔊" : "🔇";
+  if(sfxEnabled) sfxClick();
+};
+
+document.addEventListener("keydown",function(e){if($("lesson").className!="on")return;if(e.key=="ArrowRight"&& i<15)$("next").onclick();if(e.key=="ArrowLeft")$("prev").onclick()});
+
+var V=[["🤖","Hi, I’m Robo-Guide!","Hi there! I am Robo-Guide, and welcome to the Robotics and AI Lab!"],["🧠⚡","Computers can learn!","Did you know computers can learn how to see, hear, and think?"],["1️⃣➡️2️⃣➡️3️⃣","Gather · Train · Test","To build an AI, we gather pictures, train the model, and test it out!"],["📷🎤🕺","Google Teachable Machine","With Google Teachable Machine, you can build an AI in minutes, with no complex code!"],["🦾🚀","Control real robots!","Soon you will make real robots move. Are you ready? Let’s go!"]];
+var vt=0,vp=null,vs=-1,vm=true;
+function vshow(n){$("vst").innerHTML='<div class="vis">'+V[n][0]+'</div><h2>'+V[n][1]+'</h2><p class="cap">'+V[n][2]+'</p>';if(!vm)speak(V[n][2])}
+function vstop(){clearInterval(vp);vp=null;try{speechSynthesis.cancel()}catch(e){}$("vplay").textContent=vt>=30?"↻ Replay":"▶ Play"}
+function vtick(){vt+=.1;var n=Math.min(4,Math.floor(vt/6));if(n!=vs){vs=n;vshow(n)}$("vbar").style.width=Math.min(100,vt/30*100)+"%";if(vt>=30){vstop()}}
+$("vid").onclick=function(){sfxClick();$("vm").className="on";vt=0;vs=-1;$("vplay").textContent="⏸ Pause";$("vbar").style.width="0";clearInterval(vp);vp=setInterval(vtick,100)};
+$("vplay").onclick=function(){sfxClick();if(vp){vstop();$("vplay").textContent="▶ Play"}else{if(vt>=30)vt=0;vs=-1;$("vplay").textContent="⏸ Pause";vp=setInterval(vtick,100)}};
+$("vmute").onclick=function(){vm=!vm;$("vmute").textContent=vm?"🔇 Sound off":"🔊 Sound on";if(vm){try{speechSynthesis.cancel()}catch(e){}}else if(vp){vs=-1}};
+$("vx").onclick=function(){sfxClick();vstop();$("vm").className=""};
+$("vgo").onclick=function(){sfxClick();vstop();$("vm").className="";openLesson(0)};
+var h=parseInt((location.hash||"").slice(1),10);if(h>=1&&h<=16)openLesson(h-1);
+</script>
+</body>
+</html>
