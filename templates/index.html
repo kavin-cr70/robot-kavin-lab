@@ -146,7 +146,7 @@ footer{text-align:center;color:var(--muted);font-size:13px;padding:20px}
         <tr><th>Rank</th><th>Name</th><th>Class</th><th>Score</th><th>Time</th></tr>
       </thead>
       <tbody id="lb-body">
-        <tr><td colspan="5">No scores yet! Be the first!</td></tr>
+        <tr><td colspan="5">Loading live scores...</td></tr>
       </tbody>
     </table>
     <button class="btn s" onclick="closeLeaderboard()">Close</button>
@@ -278,7 +278,7 @@ function showQuizQuestion() {
     
     $("slide").innerHTML = '<h2>🎉 Quiz Completed!</h2>' +
       '<p class="st">Great job, ' + esc(currentStudent.name) + ' (' + esc(currentStudent.classVal) + ')!</p>' +
-      '<p class="sc">You scored <b>' + score + ' / 15</b> in <b>' + timeStr + '</b>!</p>' +
+      '<p class="sc">You scored <b>' + score + ' / 15</b> in ' + timeStr + '!</p>' +
       '<button class="btn p" onclick="openLeaderboard()">🏆 View Live Leaderboard</button> ' +
       '<button class="btn s" onclick="openLesson(0)">🔄 Play Again</button>';
   }
@@ -308,36 +308,51 @@ function checkAnswer(selected) {
 function saveScoreToLeaderboard() {
   var entry = {
     name: currentStudent.name || "Anonymous",
-    classVal: currentStudent.classVal || "General",
+    classVal: currentStudent.classVal || "8th Standard",
     score: score,
     time: totalSeconds,
-    date: new Date().toLocaleTimeString()
+    date: "1st Place"
   };
-  var lb = JSON.parse(localStorage.getItem("robotics_lb") || "[]");
-  lb.push(entry);
-  // Sort by highest score descending, then lowest time ascending
-  lb.sort((a, b) => b.score - a.score || a.time - b.time);
-  localStorage.setItem("robotics_lb", JSON.stringify(lb));
+  
+  // Sends score straight to Python cloud storage API
+  fetch('/api/leaderboard', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(entry)
+  })
+  .then(res => res.json())
+  .then(data => console.log("Synced to cloud:", data))
+  .catch(err => console.error("Sync error:", err));
 }
 
 function openLeaderboard() {
   sfxClick();
-  var lb = JSON.parse(localStorage.getItem("robotics_lb") || "[]");
-  var html = "";
-  if(lb.length === 0) {
-    html = '<tr><td colspan="5">No scores recorded yet!</td></tr>';
-  } else {
-    for(var k=0; k<lb.length; k++) {
-      var row = lb[k];
-      var rankEmoji = k === 0 ? "🥇 1st" : (k === 1 ? "🥈 2nd" : (k === 2 ? "🥉 3rd" : (k+1) + "th"));
-      var mins = Math.floor(row.time / 60);
-      var secs = row.time % 60;
-      var tFormatted = (mins > 0 ? mins + "m " : "") + secs + "s";
-      html += '<tr><td><b>' + rankEmoji + '</b></td><td>' + esc(row.name) + '</td><td>' + esc(row.classVal) + '</td><td><b>' + row.score + '/15</b></td><td>' + tFormatted + '</td></tr>';
-    }
-  }
-  $("lb-body").innerHTML = html;
-  $("lb-modal").className = "modal-overlay on";
+  // Fetches live scores from the Python cloud server API
+  fetch('/api/leaderboard')
+    .then(res => res.json())
+    .then(lb => {
+      var html = "";
+      if(!lb || lb.length === 0) {
+        html = '<tr><td colspan="5">No scores recorded yet!</td></tr>';
+      } else {
+        lb.sort((a, b) => parseInt(b.score) - parseInt(a.score) || parseInt(a.time) - parseInt(b.time));
+        for(var k=0; k<lb.length; k++) {
+          var row = lb[k];
+          var rankEmoji = k === 0 ? "🥇 1st" : (k === 1 ? "🥈 2nd" : (k === 2 ? "🥉 3rd" : (k+1) + "th"));
+          var mins = Math.floor(row.time / 60);
+          var secs = row.time % 60;
+          var tFormatted = (mins > 0 ? mins + "m " : "") + secs + "s";
+          html += '<tr><td><b>' + rankEmoji + '</b></td><td>' + esc(row.name) + '</td><td>' + esc(row.classVal) + '</td><td><b>' + row.score + '/15</b></td><td>' + tFormatted + '</td></tr>';
+        }
+      }
+      $("lb-body").innerHTML = html;
+      $("lb-modal").className = "modal-overlay on";
+    })
+    .catch(err => {
+      console.error("Error loading leaderboard:", err);
+      $("lb-body").innerHTML = '<tr><td colspan="5">Error loading live leaderboard</td></tr>';
+      $("lb-modal").className = "modal-overlay on";
+    });
 }
 
 function closeLeaderboard() {
@@ -415,3 +430,4 @@ var h=parseInt((location.hash||"").slice(1),10);if(h>=1&&h<=16)openLesson(h-1);
 </script>
 </body>
 </html>
+
