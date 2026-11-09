@@ -28,7 +28,7 @@ with db() as con:
 
 @app.route("/")
 def home():
-    return send_from_directory(BASE, "index.html")
+      return send_from_directory(os.path.join(BASE, "templates"), "index.html")
 
 
 @app.route("/api/leaderboard", methods=["GET"])
