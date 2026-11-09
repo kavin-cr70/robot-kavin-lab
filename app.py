@@ -1,50 +1,65 @@
-from flask import Flask, render_template, request, jsonify
-import requests
+import os
+import sqlite3
+from flask import Flask, jsonify, request, send_from_directory
+
+BASE = os.path.dirname(os.path.abspath(__file__))
+DB = os.path.join(BASE, "leaderboard.db")
 
 app = Flask(__name__)
 
-NPOINT_URL = "https://api.npoint.io/e96acb369bbc02c72723"
+
+def db():
+    con = sqlite3.connect(DB)
+    con.row_factory = sqlite3.Row
+    return con
+
+
+with db() as con:
+    con.execute(
+        """CREATE TABLE IF NOT EXISTS scores (
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               name TEXT NOT NULL,
+               classVal TEXT NOT NULL,
+               score INTEGER NOT NULL,
+               time INTEGER NOT NULL
+           )"""
+    )
+
 
 @app.route("/")
 def home():
-    return render_template("index.html")
+    return send_from_directory(BASE, "index.html")
+
 
 @app.route("/api/leaderboard", methods=["GET"])
-def get_leaderboard():
-    try:
-        res = requests.get(NPOINT_URL)
-        if res.status_code == 200:
-            scores = res.json()
-            scores.sort(key=lambda x: (int(x["score"]), -int(x["time"])), reverse=True)
-            return jsonify(scores)
-    except Exception:
-        pass
-    return jsonify([])
+def get_scores():
+    with db() as con:
+        rows = con.execute(
+            "SELECT name, classVal, score, time FROM scores "
+            "ORDER BY score DESC, time ASC LIMIT 100"
+        ).fetchall()
+    return jsonify([dict(r) for r in rows])
+
 
 @app.route("/api/leaderboard", methods=["POST"])
 def add_score():
-    data = request.get_json()
-    if data and "name" in data and "score" in data:
-        try:
-            res = requests.get(NPOINT_URL)
-            scores = res.json() if res.status_code == 200 else []
-            
-            new_entry = {
-                "name": data["name"],
-                "classVal": data.get("classVal", "8th"),
-                "score": data["score"],
-                "time": data.get("time", 0),
-                "date": data.get("date", "")
-            }
-            scores.append(new_entry)
-            scores.sort(key=lambda x: (int(x["score"]), -int(x["time"])), reverse=True)
-            
-            requests.put(NPOINT_URL, json=scores)
-            return jsonify({"status": "success", "leaderboard": scores}), 200
-        except Exception as e:
-            return jsonify({"status": "error", "message": str(e)}), 500
-                
-    return jsonify({"status": "error", "message": "Invalid data"}), 400
+    data = request.get_json(silent=True) or {}
+    try:
+        score = int(data.get("score"))
+        secs = int(data.get("time"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "bad score or time"}), 400
+    name = str(data.get("name", "")).strip()[:30]
+    cls = str(data.get("classVal", "")).strip()[:30]
+    if not name or not 0 <= score <= 15 or not 0 <= secs <= 86400:
+        return jsonify({"error": "invalid entry"}), 400
+    with db() as con:
+        con.execute(
+            "INSERT INTO scores (name, classVal, score, time) VALUES (?,?,?,?)",
+            (name, cls or "-", score, secs),
+        )
+    return jsonify({"ok": True})
+
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
